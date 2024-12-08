@@ -12,9 +12,7 @@ public class PathFinderMain {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setBackground(Color.WHITE);
 
-        AsyncTickService asyncTickService = new AsyncTickService();
-        asyncTickService.startTicker();
-        frame.add(new HomeGui(frame, asyncTickService));
+        frame.add(new HomeGui(frame));
         frame.setVisible(true);
     }
 

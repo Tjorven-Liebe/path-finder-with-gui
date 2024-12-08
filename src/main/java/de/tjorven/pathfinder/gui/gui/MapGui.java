@@ -1,6 +1,5 @@
 package de.tjorven.pathfinder.gui.gui;
 
-import de.tjorven.pathfinder.gui.AsyncTickService;
 import de.tjorven.pathfinder.gui.PerlinNoise;
 
 import javax.swing.*;
@@ -18,7 +17,7 @@ public class MapGui extends JPanel {
     private Point endPoint;
     private List<Point> path;
 
-    public MapGui(JFrame frame, AsyncTickService service) {
+    public MapGui(JFrame frame) {
         frame.add(this);
         generateMap();
 
