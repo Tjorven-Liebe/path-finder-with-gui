@@ -8,9 +8,7 @@ import java.awt.*;
 import java.util.List;
 
 public class MapGui extends JPanel {
-    private static final int WIDTH = 2000;
-    private static final int HEIGHT = 1000;
-    private static final int SCALE = 20; // Smaller scale for larger terrain features
+
     private static final int PIXEL_SIZE = 5;
     MapPathfinder mapPathfinder;
     private double[][] map;
