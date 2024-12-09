@@ -1,25 +1,28 @@
 package de.tjorven.pathfinder.gui.gui.map;
 
+import de.tjorven.pathfinder.gui.SectionManager;
+
 import java.awt.*;
 import java.util.List;
 import java.util.*;
 
 public class MapPathfinder {
-
-    private final double[][] map;
+    private final SectionManager sectionManager;
+    private final int maxSearchRadius; // Limit the search space to reduce initialization time
     private Point startPoint;
     private Point endPoint;
     private List<Point> path;
 
-    public MapPathfinder(double[][] map) {
-        this.map = map;
+    public MapPathfinder(SectionManager sectionManager, int maxSearchRadius) {
+        this.sectionManager = sectionManager;
+        this.maxSearchRadius = maxSearchRadius;
     }
 
     public void findPath() {
         path = aStarPathfinding(startPoint, endPoint);
     }
 
-    private java.util.List<Point> aStarPathfinding(Point start, Point end) {
+    private List<Point> aStarPathfinding(Point start, Point end) {
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingDouble(Node::getF));
         Set<Point> closedSet = new HashSet<>();
         Map<Point, Point> cameFrom = new HashMap<>();
@@ -54,15 +57,17 @@ public class MapPathfinder {
         return null; // No path found
     }
 
-    private java.util.List<Point> getNeighbors(Point point) {
-        java.util.List<Point> neighbors = new ArrayList<>();
+    private List<Point> getNeighbors(Point point) {
+        List<Point> neighbors = new ArrayList<>();
         int[] dx = {-1, 1, 0, 0};
         int[] dy = {0, 0, -1, 1};
 
         for (int i = 0; i < 4; i++) {
             int nx = point.x + dx[i];
             int ny = point.y + dy[i];
-            if (nx >= 0 && ny >= 0 && nx < map.length && ny < map[0].length) {
+
+            // Clamp neighbors within valid bounds
+            if (nx >= 0 && ny >= 0 && nx < maxSearchRadius * 2 && ny < maxSearchRadius * 2) {
                 neighbors.add(new Point(nx, ny));
             }
         }
@@ -71,15 +76,31 @@ public class MapPathfinder {
     }
 
     private double heuristic(Point a, Point b) {
-        return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)); // Euclidean distance
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); // Manhattan distance
     }
 
     private double cost(Point a, Point b) {
-        double terrainCost = map[b.x][b.y]; // Terrain cost based on height
-        return 1 + Math.abs(15 - terrainCost); // Higher terrain values increase cost
+        double terrainHeight = getHeightAt(b.x, b.y);
+        if (terrainHeight < -20) return Double.MAX_VALUE; // Deep water is inaccessible
+        return 1 + Math.abs(15 - terrainHeight); // Adjust cost based on terrain height
     }
 
-    private java.util.List<Point> reconstructPath(Map<Point, Point> cameFrom, Point current) {
+    private double getHeightAt(int x, int y) {
+        int sectionX = Math.floorDiv(x, SectionManager.SECTION_SIZE);
+        int sectionY = Math.floorDiv(y, SectionManager.SECTION_SIZE);
+        Point sectionKey = new Point(sectionX, sectionY);
+        double[][] section = sectionManager.getSection(sectionKey, null);
+
+        if (section != null) {
+            int localX = Math.floorMod(x, SectionManager.SECTION_SIZE);
+            int localY = Math.floorMod(y, SectionManager.SECTION_SIZE);
+            return section[localX][localY];
+        }
+
+        return 0; // Default height if section is not loaded
+    }
+
+    private List<Point> reconstructPath(Map<Point, Point> cameFrom, Point current) {
         List<Point> path = new ArrayList<>();
         while (cameFrom.containsKey(current)) {
             path.add(current);
@@ -95,10 +116,26 @@ public class MapPathfinder {
     }
 
     public void generateRandomStartAndEndPoints() {
-        // Define random start and end points
         Random random = new Random();
-        startPoint = new Point(random.nextInt(map.length), random.nextInt(map[0].length));
-        endPoint = new Point(random.nextInt(map.length), random.nextInt(map[0].length));
+
+        do {
+            startPoint = generateRandomPoint(random);
+        } while (getHeightAt(startPoint.x, startPoint.y) < 5); // Ensure start is on land
+
+        do {
+            endPoint = generateRandomPoint(random);
+        } while (getHeightAt(endPoint.x, endPoint.y) < 5 || startPoint.equals(endPoint)); // Ensure end is on land
+    }
+
+    private Point generateRandomPoint(Random random) {
+        int x = random.nextInt(maxSearchRadius * 2) - maxSearchRadius;
+        int y = random.nextInt(maxSearchRadius * 2) - maxSearchRadius;
+
+        // Clamp the point to ensure it is within valid map bounds
+        x = Math.max(0, x);
+        y = Math.max(0, y);
+
+        return new Point(x, y);
     }
 
     public Point getStartPoint() {

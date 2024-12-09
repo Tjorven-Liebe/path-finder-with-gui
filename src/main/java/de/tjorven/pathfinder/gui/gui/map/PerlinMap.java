@@ -9,19 +9,22 @@ import java.util.*;
 
 public class PerlinMap {
 
-    private static final int WIDTH = 2000;
-    private static final int HEIGHT = 1000;
-    private static final int SCALE = 20; // Smaller scale for larger terrain features
+    PerlinNoise perlin = new PerlinNoise(UUID.randomUUID().toString().getBytes());
+    private static final int WIDTH = 4000; // Larger width
+    private static final int HEIGHT = 2000; // Larger height
+    private static final int SCALE = 20;
     private static final int PIXEL_SIZE = 5;
     private double[][] map;
 
+    public void resetPerlin() {
+        perlin = new PerlinNoise(UUID.randomUUID().toString().getBytes());
+    }
+
     public double[][] generateMap() {
-        PerlinNoise perlin = new PerlinNoise(UUID.randomUUID().toString().getBytes());
         map = new double[WIDTH / PIXEL_SIZE][HEIGHT / PIXEL_SIZE];
 
         for (int x = 0; x < map.length; x++) {
             for (int y = 0; y < map[0].length; y++) {
-                // Combine multiple noise layers for smoother transitions
                 double noiseValue = (perlin.noise(x / (double) SCALE, y / (double) SCALE) * 0.6
                         + perlin.noise(x / (double) (SCALE / 2), y / (double) (SCALE / 2)) * 0.3
                         + perlin.noise(x / (double) (SCALE * 2), y / (double) (SCALE * 2)) * 0.1)
@@ -30,14 +33,19 @@ public class PerlinMap {
             }
         }
 
-        // Smooth the map multiple times
         map = smoothMap(map, 5);
 
-        // Identify and merge small regions
-        Map<Point, java.util.List<Point>> regions = floodFillRegions(map, 0); // Threshold at 0 for water regions
-        mergeSmallRegions(map, regions, 50); // Merge regions smaller than 50 cells7
+        Map<Point, List<Point>> regions = floodFillRegions(map, 0);
+        mergeSmallRegions(map, regions, 50);
 
         return map;
+    }
+
+    public double generateTile(int x, int y) {
+        return (perlin.noise(x / (double) SCALE, y / (double) SCALE) * 0.6
+                + perlin.noise(x / (double) (SCALE / 2), y / (double) (SCALE / 2)) * 0.3
+                + perlin.noise(x / (double) (SCALE * 2), y / (double) (SCALE * 2)) * 0.1)
+                * 200 - 100;
     }
 
     private double[][] smoothMap(double[][] map, int iterations) {
@@ -77,19 +85,18 @@ public class PerlinMap {
         return map;
     }
 
-
-    private Map<Point, java.util.List<Point>> floodFillRegions(double[][] map, double threshold) {
+    private Map<Point, List<Point>> floodFillRegions(double[][] map, double threshold) {
         int width = map.length;
         int height = map[0].length;
         boolean[][] visited = new boolean[width][height];
-        Map<Point, java.util.List<Point>> regions = new HashMap<>();
+        Map<Point, List<Point>> regions = new HashMap<>();
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 if (!visited[x][y]) {
                     double value = map[x][y];
                     if (value < threshold) { // Only consider points below the threshold
-                        java.util.List<Point> region = new ArrayList<>();
+                        List<Point> region = new ArrayList<>();
                         floodFill(x, y, value, map, visited, region);
                         regions.put(new Point(x, y), region);
                     }
@@ -100,7 +107,7 @@ public class PerlinMap {
         return regions;
     }
 
-    private void floodFill(int x, int y, double value, double[][] map, boolean[][] visited, java.util.List<Point> region) {
+    private void floodFill(int x, int y, double value, double[][] map, boolean[][] visited, List<Point> region) {
         int width = map.length;
         int height = map[0].length;
         Queue<Point> queue = new LinkedList<>();
@@ -126,8 +133,8 @@ public class PerlinMap {
         }
     }
 
-    private void mergeSmallRegions(double[][] map, Map<Point, java.util.List<Point>> regions, int minRegionSize) {
-        for (Map.Entry<Point, java.util.List<Point>> entry : regions.entrySet()) {
+    private void mergeSmallRegions(double[][] map, Map<Point, List<Point>> regions, int minRegionSize) {
+        for (Map.Entry<Point, List<Point>> entry : regions.entrySet()) {
             List<Point> region = entry.getValue();
             if (region.size() < minRegionSize) {
                 for (Point point : region) {

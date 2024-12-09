@@ -1,10 +1,9 @@
 package de.tjorven.pathfinder.gui;
 
 import java.security.SecureRandom;
-import java.util.Random;
 
 public class PerlinNoise {
-    private int[] permutation;
+    private final int[] permutation;
 
     public PerlinNoise(byte[] seed) {
         permutation = new int[512];
@@ -61,4 +60,5 @@ public class PerlinNoise {
         double v = h < 2 ? y : x;
         return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
     }
+
 }
