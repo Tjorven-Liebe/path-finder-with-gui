@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = 'de.tjorven'
@@ -16,4 +17,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'de.tjorven.pathfinder.gui.PathFinderMain'
+        )
+    }
 }
